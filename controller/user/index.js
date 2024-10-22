@@ -1,8 +1,6 @@
-const { Schema, db } = require("../../db");
-
+const Admin = require("../../model/UserAdmin")
 class UserAdmin {
   add = async (ctx, next) => {
-    console.log(db);
     ctx.body = {
       result: 1,
       msg: "添加成功",
