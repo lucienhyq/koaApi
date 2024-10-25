@@ -1,12 +1,14 @@
 class checkLogin {
   check = async (ctx, next) => {
-    console.log(ctx.session);
-    if (ctx.session?.user) {
-      await next({login:true});
+    console.log(ctx.session,'dddddddddd')
+    if (ctx.session?.userId) {
+      // 已登录
+      await next();
     } else {
+      ctx.response.status = 401;
       ctx.body = {
-        code: 401,
         msg: "请先登录",
+        result: 0,
       };
     }
   };

@@ -1,16 +1,19 @@
 const { Schema, db } = require("./db");
 const bcrypt = require("bcrypt");
 const adminSchema = new Schema({
-  username: { type: String },
-  password: { type: String },
-  email: { type: String },
-  phone: { type: String },
-  role: { type: String },
-  gender: { type: Number },
+  username: { type: String, default: "" },
+  password: { type: String, default: "" },
+  email: { type: String, default: "" },
+  phone: { type: String, default: "" },
+  role: { type: Number, default: 0 },
+  // 0 男 1 女
+  gender: { type: Number, default: 0 },
   createTime: { type: Date, default: Date.now },
   updateTime: { type: Date, default: Date.now },
 });
-const Admin = db.model("Admin", adminSchema);
+adminSchema.add({
+  balance: { type: Number, default: 0 },
+});
 // 对模型方法进行扩展，例如添加验证密码的方法。
 adminSchema.methods.ValidatesPassword = function (password) {
   return bcrypt.compareSync(password, this.password);
@@ -32,4 +35,7 @@ adminSchema.pre("save", function (next) {
     next();
   }
 });
+
+const Admin = db.model("Admin", adminSchema);
+
 module.exports = Admin;
