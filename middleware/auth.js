@@ -16,7 +16,7 @@ const authMiddleware = KoaJWT({
 
 // 生成 JWT
 const generateToken = (userId) => {
-  return jwt.sign({ userId }, secret, { expiresIn: "1h" });
+  return jwt.sign({ userId }, secret, { expiresIn: "12h" });
 };
 
 const checkAuthorizationHeader = async (ctx, next) => {

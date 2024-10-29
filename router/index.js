@@ -13,20 +13,52 @@ const { checkAuthorizationHeader } = require("../middleware/auth");
 // });
 
 // 添加会员
-router.get("/add/user", checkLogin.check, userAdmin.checkUser, userAdmin.add);
+router.get(
+  "/add/user",
+  checkAuthorizationHeader,
+  checkLogin.check,
+  userAdmin.checkUser,
+  userAdmin.add
+);
 // 删除会员
 router.delete(
   "/delete/user",
+  checkAuthorizationHeader,
+  checkLogin.check,
   userAdmin.checkUser,
   userAdmin.deleteUser
 );
-// 修改会员信息
+// 更新会员信息
 router.post(
   "/update/user",
+  checkAuthorizationHeader,
+  checkLogin.check,
   userAdmin.checkUser,
   userAdmin.updateUser
 );
+// 查询会员信息
+router.get(
+  "/find/user",
+  checkAuthorizationHeader,
+  checkLogin.check,
+  userAdmin.checkUser,
+  userAdmin.findOneUser
+);
 // 登录
 router.post("/login", checkAuthorizationHeader, userAdmin.login);
+// 退出登录
+router.get(
+  "/loginOut",
+  checkAuthorizationHeader,
+  checkLogin.check,
+  userAdmin.loginOut
+);
+// 充值余额
+router.post(
+  "/balance/add",
+  checkAuthorizationHeader,
+  checkLogin.check,
+  userAdmin.addBalance
+);
 
 module.exports = router;

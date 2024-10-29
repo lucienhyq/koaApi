@@ -1,5 +1,8 @@
+// 引入数据库模式和数据库连接
 const { Schema, db } = require("./db");
+// 引入bcrypt模块用于密码加密
 const bcrypt = require("bcrypt");
+// 定义管理员数据模式
 const adminSchema = new Schema({
   username: { type: String, default: "" },
   password: { type: String, default: "" },
@@ -11,10 +14,16 @@ const adminSchema = new Schema({
   createTime: { type: Date, default: Date.now },
   updateTime: { type: Date, default: Date.now },
 });
+// 添加余额字段到模式中
 adminSchema.add({
   balance: { type: Number, default: 0 },
 });
 // 对模型方法进行扩展，例如添加验证密码的方法。
+/**
+ * 验证密码是否正确
+ * @param {string} password - 用户输入的密码
+ * @returns {boolean} - 密码验证结果
+ */
 adminSchema.methods.ValidatesPassword = function (password) {
   return bcrypt.compareSync(password, this.password);
 };
@@ -36,6 +45,7 @@ adminSchema.pre("save", function (next) {
   }
 });
 
+// 创建并导出Admin模型
 const Admin = db.model("Admin", adminSchema);
 
 module.exports = Admin;

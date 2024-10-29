@@ -1,6 +1,9 @@
 class checkLogin {
   check = async (ctx, next) => {
-    console.log(ctx.session,'dddddddddd')
+    console.log(ctx.session.userId, "ctx.session");
+    if (ctx.state?.user?.userId) {
+      ctx.session.userId = ctx.state?.user?.userId;
+    }
     if (ctx.session?.userId) {
       // 已登录
       await next();

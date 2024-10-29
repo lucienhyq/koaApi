@@ -24,4 +24,4 @@ db.on("close", function () {
   });
 });
 
-module.exports = { Schema: mongoose.Schema, db: db };
+module.exports = { Schema: mongoose.Schema, db: db, mongoose: mongoose };

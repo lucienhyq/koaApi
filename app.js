@@ -10,7 +10,7 @@ const toolFunMiddleware = require("./middleware/tool");
 app.keys = ["your-session-secret"]; // 用于签名 session ID 的密钥
 const CONFIG = {
   key: "koa:sess", // cookie 的 key，默认为 `koa:sess`
-  maxAge: 10000, // session 的有效期，单位为毫秒，默认为 1 天
+  maxAge: 86400000, // session 的有效期，单位为毫秒，默认为 1 天
   overwrite: true, // 是否允许覆盖已存在的 session，默认为 true
   httpOnly: true, // 是否将 session cookie 设置为 httpOnly，默认为 true
   signed: true, // 是否签名 session cookie，默认为 true
