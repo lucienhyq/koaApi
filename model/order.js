@@ -17,7 +17,7 @@ const { Schema, db, mongoose } = require("./db");
  * @property {String} shippingMethod - 物流方式
  * @property {String} shippingStatus - 物流状态
  */
-const OrderList = new Schema({
+const OrderListSchema = new Schema({
   orderId: {
     type: String,
     required: true,
@@ -38,11 +38,8 @@ const OrderList = new Schema({
   orderTime: {
     type: Date,
   },
+  // 0充值
   paymentMethod: {
-    type: Number,
-    default: 0,
-  },
-  paymentStatus: {
     type: Number,
     default: 0,
   },
@@ -57,11 +54,13 @@ const OrderList = new Schema({
   },
 });
 // 在保存文档之前，如果文档是新创建的，则设置orderTime为当前时间
-OrderList.pre("save", function (next) {
+OrderListSchema.pre("save", function (next) {
   if (this.isNew) {
     this.orderTime = new Date();
   }
   next();
 });
+const OrderList = db.model("Order", OrderListSchema);
+
 // 导出订单列表的数据库模式
 module.exports = OrderList;

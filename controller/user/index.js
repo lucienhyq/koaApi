@@ -237,18 +237,6 @@ class UserAdmin {
   handleOrderCreated = (order) => {
     console.log(order, "订单创建了");
   };
-  orderListCreated(amount) {
-    // 监听
-    // eventEmitter.emit("orderCreated", { amount });
-    let orderJson = {
-      orderId: "sn" + Date.now(),
-      totalAmount: amount,
-      userId: ctx.session.userId,
-      orderStatus: 0,
-      createdAt: new Date(),
-    };
-    console.log(orderId);
-  };
   // 充值
   addBalance = async (ctx, next) => {
     try {
@@ -274,7 +262,15 @@ class UserAdmin {
       }
 
       try {
-        this.orderListCreated(amount);
+        let orderJson = {
+          orderId: "SN" + Date.now(),
+          userId: new mongoose.Types.ObjectId(ctx.session.userId),
+          totalAmount: amount,
+          orderStatus: 0,
+          paymentMethod: 0,
+        };
+        let createOrder = await Order.create(orderJson);
+        console.log(createOrder);
         const user = await Admin.findOneAndUpdate(
           { _id: new mongoose.Types.ObjectId(ctx.session.userId) },
           { $inc: { balance: amount } },
@@ -311,6 +307,39 @@ class UserAdmin {
         result: 0,
         msg: "服务器错误: " + error.message,
       };
+    }
+  };
+  // 查询订单记录
+  orderRecord = async (ctx, next) => {
+    try {
+      const { orderId, paymentMethod } = ctx.request.paramsObj;
+      console.log(
+        paymentMethod,
+        ctx.session,
+        !ctx.request.paramsObj?.paymentMethod
+      );
+      let userId = "";
+      if (ctx.session.userId) {
+        userId = new mongoose.Types.ObjectId(ctx.session.userId);
+      }
+      const res = await Order.findOne({
+        userId: userId,
+        $or: [
+          { orderId: orderId },
+        ],
+      })
+        .populate({
+          path: "userId",
+          select: "_id username phone balance",
+        })
+        .select("-__v");
+      ctx.body = {
+        msg: "成功",
+        data: res,
+      };
+      // 验证金额和订单号
+    } catch (error) {
+      console.log(error);
     }
   };
 }

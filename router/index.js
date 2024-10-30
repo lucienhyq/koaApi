@@ -60,5 +60,11 @@ router.post(
   checkLogin.check,
   userAdmin.addBalance
 );
-
+// 查找订单记录
+router.post(
+  "/orderRecord",
+  checkAuthorizationHeader,
+  checkLogin.check,
+  userAdmin.orderRecord
+);
 module.exports = router;
