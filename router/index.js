@@ -46,6 +46,7 @@ router.get(
 );
 // 登录
 router.post("/login", checkAuthorizationHeader, userAdmin.login);
+router.get("/login", checkAuthorizationHeader, userAdmin.login);
 // 退出登录
 router.get(
   "/loginOut",
@@ -67,4 +68,5 @@ router.post(
   checkLogin.check,
   userAdmin.orderRecord
 );
+
 module.exports = router;

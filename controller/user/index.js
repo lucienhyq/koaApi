@@ -27,6 +27,7 @@ class UserAdmin {
   // 登录
   login = async (ctx, next) => {
     const { phone, password } = ctx.request.paramsObj;
+    console.log(phone, password, "wwwwwww");
     try {
       const findAdmin = await Admin.findOne({ phone });
       if (!findAdmin) {
@@ -48,6 +49,7 @@ class UserAdmin {
       }
 
       const bcryptResult = await bcrypt.compare(password, findAdmin.password);
+      console.log("ddddddd", bcryptResult);
       if (bcryptResult) {
         const token = generateToken({ id: findAdmin._id });
         ctx.session.userId = String(findAdmin._id);
@@ -270,22 +272,26 @@ class UserAdmin {
           paymentMethod: 0,
         };
         let createOrder = await Order.create(orderJson);
-        console.log(createOrder);
-        const user = await Admin.findOneAndUpdate(
-          { _id: new mongoose.Types.ObjectId(ctx.session.userId) },
-          { $inc: { balance: amount } },
-          { new: true }
-        );
+        if (createOrder.orderId) {
+          // 触发orderCreated事件
+          eventEmitter.emit("orderCreated", createOrder);
+          const user = await Admin.findOneAndUpdate(
+            { _id: new mongoose.Types.ObjectId(ctx.session.userId) },
+            { $inc: { balance: amount } },
+            { new: true }
+          );
 
-        if (!user) {
-          throw new Error("用户不存在");
+          if (!user) {
+            throw new Error("用户不存在");
+          }
+          ctx.body = {
+            result: 1,
+            msg: "充值成功",
+            data: [],
+          };
+        } else {
+          throw new Error("订单创建失败");
         }
-
-        ctx.body = {
-          result: 1,
-          msg: "充值成功",
-          data: [],
-        };
       } catch (error) {
         console.error("内部错误", {
           error,
@@ -322,12 +328,19 @@ class UserAdmin {
       if (ctx.session.userId) {
         userId = new mongoose.Types.ObjectId(ctx.session.userId);
       }
-      const res = await Order.findOne({
+      const query = {
         userId: userId,
-        $or: [
-          { orderId: orderId },
-        ],
-      })
+      };
+      if (orderId || paymentMethod) {
+        query.$or = [];
+        if (orderId) {
+          query.$or.push({ orderId: orderId });
+        }
+        if (paymentMethod) {
+          query.$or.push({ paymentMethod: paymentMethod });
+        }
+      }
+      const res = await Order.find(query)
         .populate({
           path: "userId",
           select: "_id username phone balance",
