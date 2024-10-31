@@ -27,7 +27,6 @@ class UserAdmin {
   // 登录
   login = async (ctx, next) => {
     const { phone, password } = ctx.request.paramsObj;
-    console.log(phone, password, "wwwwwww");
     try {
       const findAdmin = await Admin.findOne({ phone });
       if (!findAdmin) {
@@ -37,37 +36,38 @@ class UserAdmin {
         };
         return;
       }
-
       if (ctx.state?.user?.userId) {
         ctx.session.userId = ctx.state.user.userId;
         ctx.body = {
           code: 200,
           msg: "登录成功",
-          data: ctx.state.authBreak ? ctx.state.authBreak : "",
+          data: ctx.state.authBreak,
+          result: 1,
         };
         return;
       }
 
       const bcryptResult = await bcrypt.compare(password, findAdmin.password);
-      console.log("ddddddd", bcryptResult);
       if (bcryptResult) {
         const token = generateToken({ id: findAdmin._id });
         ctx.session.userId = String(findAdmin._id);
-        console.log(ctx.session, "登录后 session");
         ctx.body = {
           msg: "登录成功1",
           data: token,
+          result: 1,
         };
       } else {
         ctx.response.status = 401;
         ctx.body = {
           msg: "密码错误",
+          result: 0,
         };
       }
     } catch (error) {
       ctx.response.status = 500;
       ctx.body = {
         msg: "服务器错误" + error,
+        result: 0,
       };
     }
   };
