@@ -1,6 +1,5 @@
 class checkLogin {
   check = async (ctx, next) => {
-    console.log(ctx.session.userId, "ctx.session");
     if (ctx.state?.user?.userId) {
       ctx.session.userId = ctx.state?.user?.userId;
     }

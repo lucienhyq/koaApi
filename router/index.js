@@ -47,6 +47,8 @@ router.get(
 // 登录
 router.post("/login", checkAuthorizationHeader, userAdmin.login);
 router.get("/login", checkAuthorizationHeader, userAdmin.login);
+// 注册
+router.get("/register", userAdmin.register);
 // 退出登录
 router.get(
   "/loginOut",
@@ -68,5 +70,6 @@ router.post(
   checkLogin.check,
   userAdmin.orderRecord
 );
+// 获取当前管理员 权限
 
 module.exports = router;

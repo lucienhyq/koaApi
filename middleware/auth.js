@@ -21,14 +21,14 @@ const generateToken = (userId) => {
 
 const checkAuthorizationHeader = async (ctx, next) => {
   const authorization = ctx.headers.authorization;
-  const token = authorization.replace(/^Bearer\s/, '');
   if (!authorization) {
     ctx.state.authBreak = false;
   } else {
+    const token = authorization.replace(/^Bearer\s/, "");
     ctx.state.authBreak = token;
     try {
       await authMiddleware(ctx, next);
-      return
+      return;
     } catch (err) {}
   }
   await next();

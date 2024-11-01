@@ -8,15 +8,22 @@ const adminSchema = new Schema({
   password: { type: String, default: "" },
   email: { type: String, default: "" },
   phone: { type: String, default: "" },
-  role: { type: Number, default: 0 },
+  // 0 普通用户 1 总管理员 2 家政代理
+  roles: [{ type: Schema.Types.ObjectId, ref: 'Role' }],
   // 0 男 1 女
   gender: { type: Number, default: 0 },
   createTime: { type: Date, default: Date.now },
   updateTime: { type: Date, default: Date.now },
 });
-// 添加余额字段到模式中
 adminSchema.add({
-  balance: { type: Number, default: 0 },
+  balance: {
+    type: Number,
+    default: 0,
+  },
+  avatar: {
+    type: String,
+    default: "",
+  },
 });
 // 对模型方法进行扩展，例如添加验证密码的方法。
 /**

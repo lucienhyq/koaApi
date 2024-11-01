@@ -52,7 +52,7 @@ class UserAdmin {
         const token = generateToken({ id: findAdmin._id });
         ctx.session.userId = String(findAdmin._id);
         ctx.body = {
-          msg: "登录成功1",
+          msg: "登录成功",
           data: token,
           result: 1,
         };
@@ -71,7 +71,37 @@ class UserAdmin {
       };
     }
   };
-
+  register = async (ctx, next) => {
+    try {
+      const { phone, password } = ctx.request.paramsObj;
+      const findAdmin = await Admin.findOne({ phone });
+      if (findAdmin) {
+        ctx.body = {
+          result: 0,
+          msg: "手机号已存在会员",
+          data: "",
+        };
+        return;
+      }
+      const hashedPassword = await bcrypt.hash(password, 10);
+      const res = await Admin.create({ phone, password: hashedPassword });
+      if (res) {
+        const token = generateToken({ id: res._id });
+        ctx.session.userId = String(res._id);
+        ctx.body = {
+          result: 1,
+          msg: "注册成功",
+          data: token,
+        };
+      }
+    } catch (error) {
+      ctx.body = {
+        result: 0,
+        msg: "注册失败"+error,
+        data: "",
+      };
+    }
+  };
   // 添加会员 中间件
   add = async (ctx, next) => {
     try {
