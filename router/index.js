@@ -3,14 +3,7 @@ const router = new Router();
 const checkLogin = require("../middleware/checkLogin");
 const userAdmin = require("../controller/user/index");
 const { checkAuthorizationHeader } = require("../middleware/auth");
-// router.get("/", async (ctx, next) => {
-//   console.log("ctx.request.params:", ctx.request.params);
-//   ctx.body = "Hello World1";
-// });
-// router.post("/", async (ctx, next) => {
-//   console.log("ctx.request.params:", ctx.request.params);
-//   ctx.body = "Hello World1";
-// });
+const homeWorkRouter = require("./homeWork");
 
 // 添加会员
 router.get(
@@ -52,8 +45,6 @@ router.get("/register", userAdmin.register);
 // 退出登录
 router.get(
   "/loginOut",
-  checkAuthorizationHeader,
-  checkLogin.check,
   userAdmin.loginOut
 );
 // 充值余额
@@ -71,5 +62,8 @@ router.post(
   userAdmin.orderRecord
 );
 // 获取当前管理员 权限
+
+// 将 homeWork 路由挂载到 /homeWork 下
+router.use("/homeWork", homeWorkRouter.routes(), homeWorkRouter.allowedMethods());
 
 module.exports = router;

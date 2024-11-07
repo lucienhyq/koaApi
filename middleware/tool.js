@@ -51,6 +51,38 @@ class toolFun {
       .replace(/"/g, "&quot;")
       .replace(/'/g, "&#039;");
   };
+  checkRouterParams = (params, requiredFields = []) => {
+    if (!params || typeof params !== "object" || Array.isArray(params)) {
+      return { valid: false, message: "参数必须是一个有效的对象" };
+    }
+
+    if (!Array.isArray(requiredFields)) {
+      return { valid: false, message: "需要检查的字段列表必须是一个数组" };
+    }
+
+    let isValid = true;
+    let errorMessage = "";
+    // 如果 requiredFields 为空数组，则检查所有字段
+    const fieldsToCheck =
+      requiredFields.length === 0 ? Object.keys(params) : requiredFields;
+    for (const field of fieldsToCheck) {
+      if (params.hasOwnProperty(field)) {
+        const value = params[field];
+        if (value === undefined || value === null || value === "") {
+          isValid = false;
+          errorMessage = `参数 ${field} 不能为空、null 或 undefined`;
+          break; // 遇到无效参数立即停止检查
+        }
+      } else {
+        isValid = false;
+        errorMessage = `缺少必需参数`;
+        console.log(`缺少必需参数 ${field}`);
+        break; // 缺少必需参数立即停止检查
+      }
+    }
+
+    return { valid: isValid, message: errorMessage };
+  };
 }
 
 module.exports = new toolFun();

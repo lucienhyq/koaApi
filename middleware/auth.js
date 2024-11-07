@@ -24,12 +24,16 @@ const checkAuthorizationHeader = async (ctx, next) => {
   if (!authorization) {
     ctx.state.authBreak = false;
   } else {
+    // 如果有携带token，就验证走鉴权中间件authMiddleware
     const token = authorization.replace(/^Bearer\s/, "");
+    // const decoded = jwt.verify(token, secret);
     ctx.state.authBreak = token;
     try {
       await authMiddleware(ctx, next);
       return;
-    } catch (err) {}
+    } catch (err) {
+      console.error(err);
+    }
   }
   await next();
 };

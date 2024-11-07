@@ -1,10 +1,9 @@
 class checkLogin {
   check = async (ctx, next) => {
-    if (ctx.state?.user?.userId) {
-      ctx.session.userId = ctx.state?.user?.userId;
+    if (ctx.state.user && ctx.state.user?.userId) {
+      ctx.session.userId = ctx.state?.user?.userId.id;
     }
     if (ctx.session?.userId) {
-      // 已登录
       await next();
     } else {
       ctx.response.status = 401;

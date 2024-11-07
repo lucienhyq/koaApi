@@ -1,10 +1,13 @@
-const Admin = require("../../model/UserAdmin");
+const { Admin, Role } = require("../../model/UserAdmin");
 const Order = require("../../model/Order");
 const bcrypt = require("bcrypt");
 const { generateToken } = require("../../middleware/auth");
 const { mongoose } = require("../../model/db");
 const EventEmitter = require("events");
 const eventEmitter = new EventEmitter();
+// 获取路由实例
+const RoleManager = require("../../controller/roleManager");
+const roleManager = RoleManager.getInstance();
 class UserAdmin {
   constructor() {
     eventEmitter.on("orderCreated", this.handleOrderCreated.bind(this));
@@ -26,9 +29,14 @@ class UserAdmin {
 
   // 登录
   login = async (ctx, next) => {
-    const { phone, password } = ctx.request.paramsObj;
+    const { phone, password, username } = ctx.request.paramsObj;
     try {
-      const findAdmin = await Admin.findOne({ phone });
+      const findAdmin = await Admin.findOne({
+        $or: [{ phone: phone }, { username: username }],
+      }).populate({
+        path: "roles",
+        select: "name -_id",
+      });
       if (!findAdmin) {
         ctx.response.status = 404;
         ctx.body = {
@@ -36,32 +44,41 @@ class UserAdmin {
         };
         return;
       }
-      if (ctx.state?.user?.userId) {
-        ctx.session.userId = ctx.state.user.userId;
+      console.log("ddddddddd", ctx.state);
+      let permissions = roleManager.getPermissionsForRole(findAdmin.roles.name);
+      if (ctx.state.authBreak) {
+        // 经过token鉴权
+        ctx.session.userId = ctx.state.user.userId.id;
         ctx.body = {
-          code: 200,
           msg: "登录成功",
-          data: ctx.state.authBreak,
+          data: { token: ctx.state.authBreak, permissions },
           result: 1,
         };
         return;
-      }
-
-      const bcryptResult = await bcrypt.compare(password, findAdmin.password);
-      if (bcryptResult) {
-        const token = generateToken({ id: findAdmin._id });
-        ctx.session.userId = String(findAdmin._id);
-        ctx.body = {
-          msg: "登录成功",
-          data: token,
-          result: 1,
-        };
       } else {
-        ctx.response.status = 401;
-        ctx.body = {
-          msg: "密码错误",
-          result: 0,
-        };
+        if(!password){
+          ctx.body = {
+            msg: "密码错误",
+            result: 0,
+          };
+          return;
+        }
+        const bcryptResult = await bcrypt.compare(password, findAdmin.password);
+        if (bcryptResult) {
+          const token = generateToken({ id: findAdmin._id });
+          ctx.session.userId = String(findAdmin._id);
+          ctx.body = {
+            msg: "登录成功",
+            data: { token, permissions },
+            result: 1,
+          };
+        } else {
+          ctx.response.status = 401;
+          ctx.body = {
+            msg: "密码错误",
+            result: 0,
+          };
+        }
       }
     } catch (error) {
       ctx.response.status = 500;
@@ -83,8 +100,13 @@ class UserAdmin {
         };
         return;
       }
-      const hashedPassword = await bcrypt.hash(password, 10);
-      const res = await Admin.create({ phone, password: hashedPassword });
+      //注册默认是普通会员
+      const hasRole = await Role.findOne({ Level: "0" });
+      const res = await Admin.create({
+        phone,
+        password,
+        roles: hasRole._id,
+      });
       if (res) {
         const token = generateToken({ id: res._id });
         ctx.session.userId = String(res._id);
@@ -97,7 +119,7 @@ class UserAdmin {
     } catch (error) {
       ctx.body = {
         result: 0,
-        msg: "注册失败"+error,
+        msg: "注册失败" + error,
         data: "",
       };
     }
@@ -379,6 +401,7 @@ class UserAdmin {
       ctx.body = {
         msg: "成功",
         data: res,
+        result: 1,
       };
       // 验证金额和订单号
     } catch (error) {
