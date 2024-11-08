@@ -1,0 +1,37 @@
+{
+  "name": "koaapi",
+  "version": "1.0.0",
+  "description": "koa-api web server",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js",
+    "dev": "nodemon app.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lucienhyq/koaApi.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/lucienhyq/koaApi/issues"
+  },
+  "homepage": "https://github.com/lucienhyq/koaApi#readme",
+  "dependencies": {
+    "@koa/router": "^13.1.0",
+    "bcrypt": "^5.1.1",
+    "chalk": "^2.3.0",
+    "dotenv": "^16.4.5",
+    "jsonwebtoken": "^9.0.2",
+    "koa": "^2.15.3",
+    "koa-bodyparser": "^4.4.1",
+    "koa-jwt": "^4.0.4",
+    "koa-router": "^13.0.1",
+    "koa-session": "^6.4.0",
+    "koa2-swagger-ui": "^5.10.0",
+    "mongoose": "^7.1.1",
+    "nodemon": "^3.1.7",
+    "swagger-jsdoc": "^6.2.8"
+  }
+}
