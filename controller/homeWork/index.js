@@ -5,7 +5,17 @@ const {
 const { Admin, Role } = require("../../model/UserAdmin");
 const toolFunMiddleware = require("../../middleware/tool");
 const { db } = require("../../model/db");
+// 连接字符串，确保包含所有副本集成员
+const mongoose = require('mongoose');
+const uri =
+  "mongodb://127.0.0.1:27018/dev?replicaSet=rs0";
+
+mongoose
+  .connect(uri, { useNewUrlParser: true, useUnifiedTopology: true })
+  .then(() => console.log("MongoDB connected"))
+  .catch((err) => console.error("MongoDB connection error:", err));
 class homeWork {
+  controller() {}
   //普通用户申请做家政阿姨
   addHomeWorkMaid = async (ctx, next) => {
     try {
@@ -116,19 +126,6 @@ class homeWork {
       if (!AgencySchema_Model_result) {
         throw new Error("创建失败");
       }
-      // // 注释掉，应该到审核中，等审核通过才修改用户角色
-      // // 获取代理的角色_id
-      // const RoleResult = await Role.findOne({
-      //   Level: "2",
-      // });
-      // if (AgencySchema_Model_result) {
-      //   // 注册成功后改用户的角色
-      //   const adminUpdate = await Admin.findOneAndUpdate(
-      //     { _id: adminResult._id },
-      //     { $set: { roleGrade: 2, roles: RoleResult._id } }
-      //   );
-      //   console.log("=====homeWorkAgency", adminUpdate);
-      // }
       ctx.body = {
         msg: "success",
         data: AgencySchema_Model_result,
@@ -144,14 +141,154 @@ class homeWork {
   };
   //后台 家政代理审核列表
   getAgencyAuditList = async (ctx, next) => {
-    let { valid, message } = toolFunMiddleware.checkRouterParams(
-      ctx.request.paramsObj
-    );
-    if (!valid) {
-      // 参数校验不通过：返回前端提示
-      ctx.status = 400;
-      ctx.body = { message, result: 0 };
-      return;
+    try {
+      let { valid, message } = toolFunMiddleware.checkRouterParams(
+        ctx.request.paramsObj
+      );
+      if (!valid) {
+        // 参数校验不通过：返回前端提示
+        ctx.status = 400;
+        ctx.body = { message, result: 0 };
+        return;
+      }
+      // adminId 会员id
+      // adminName 会员名称
+      // agencyName 代理名称
+      let { page = 1, agencyName, adminName, adminId } = ctx.request.paramsObj;
+      const pageSize = 15;
+      let skipCount = (page - 1) * pageSize;
+      // 会员信息
+      let adminResult;
+      // 家政代理表的查询条件
+      let querySearch = {};
+      // 使用会员id查找
+      if (adminId || adminName) {
+        adminResult = await Admin.findOne({
+          $or: [{ id: adminId }, { username: adminName }],
+        });
+      }
+      if (agencyName) {
+        querySearch.$and.push({
+          adminId: adminResult._id,
+          agencyName: agencyName,
+        });
+      }
+      const AgencySchemaResult = await AgencySchema_Model.find(querySearch)
+        .populate({
+          path: "adminId",
+          select: "id username phone roleGrade -_id",
+        })
+        .select("-__v")
+        .skip(skipCount)
+        .limit(pageSize);
+      ctx.body = {
+        msg: "success",
+        data: AgencySchemaResult,
+        result: 1,
+      };
+    } catch (error) {
+      ctx.status = 500;
+      ctx.body = {
+        msg: "err:" + error,
+        data: [],
+      };
+    }
+  };
+
+  // 后台 家政代理审核
+  auditAgency = async (ctx, next) => {
+    try {
+      let { valid, message } = toolFunMiddleware.checkRouterParams(
+        ctx.request.paramsObj,
+        ["id"]
+      );
+      if (!valid) {
+        // 参数校验不通过：返回前端提示
+        ctx.status = 400;
+        ctx.body = { message, result: 0 };
+        return;
+      }
+      let { id } = ctx.request.paramsObj;
+
+      // 获取当前登录人员信息
+      const userInfo = await Admin.findOne({
+        _id: ctx.session.userId,
+      });
+      if (userInfo.roleGrade != 1) {
+        throw new Error("权限不足");
+      }
+
+      // 开始事务
+      const session = await mongoose.startSession();
+      session.startTransaction();
+
+      try {
+        // 代理信息
+        const AgencyResult = await AgencySchema_Model.findOne({
+          id: id,
+        }).populate('adminId').session(session);
+        if (!AgencyResult) {
+          throw new Error("代理信息不存在");
+        }
+
+        // 获取当前代理的用户信息
+        console.log(AgencyResult.adminId.id,'ddddddddd')
+        const adminAgencyResult = await Admin.findOne({
+          id: AgencyResult.adminId.id,
+        }).session(session);
+        console.log('dwwwww',adminAgencyResult)
+        if (!adminAgencyResult) {
+          throw new Error("代理用户信息不存在");
+        }
+
+        // 获取代理的角色_id
+        const RoleResult = await Role.findOne({
+          Level: "2",
+        }).session(session);
+        if (!RoleResult) {
+          throw new Error("角色信息不存在");
+        }
+
+        // 更新代理信息
+        const AgencyUpdateResult = await AgencySchema_Model.findOneAndUpdate(
+          { id: id },
+          { $set: { audit_status: true } },
+          { new: true }
+        ).session(session);
+        if (!AgencyUpdateResult) {
+          throw new Error("更新代理信息失败");
+        }
+
+        // 更新用户信息
+        const adminAgencyUpdateResult = await Admin.findOneAndUpdate(
+          { _id: adminAgencyResult.id },
+          { $set: { roles: RoleResult._id } },
+          { new: true }
+        ).session(session);
+        if (!adminAgencyUpdateResult) {
+          throw new Error("更新用户信息失败");
+        }
+
+        // 提交事务
+        await session.commitTransaction();
+        session.endSession();
+
+        ctx.body = {
+          result: 1,
+          data: [],
+          message: "修改成功",
+        };
+      } catch (error) {
+        // 回滚事务
+        await session.abortTransaction();
+        session.endSession();
+        throw error;
+      }
+    } catch (error) {
+      ctx.status = 500;
+      ctx.body = {
+        message: error.message,
+      };
     }
   };
 }
