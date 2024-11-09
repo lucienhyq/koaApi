@@ -2,7 +2,7 @@ const { Admin, Role } = require("../../model/UserAdmin");
 const Order = require("../../model/Order");
 const bcrypt = require("bcrypt");
 const { generateToken } = require("../../middleware/auth");
-const { mongoose } = require("../../model/db");
+const { mongoose } = require("../../utils/db");
 const EventEmitter = require("events");
 const eventEmitter = new EventEmitter();
 // 获取路由实例

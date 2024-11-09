@@ -1,4 +1,4 @@
-const { Schema, db } = require("./db");
+const { Schema, db } = require("../utils/db");
 const Ids = require("./ids");
 // 家政阿姨模型
 const homeWorkMaidSchema = new Schema({

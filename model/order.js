@@ -1,5 +1,5 @@
 // 引入数据库模式和数据库连接
-const { Schema, db, mongoose } = require("./db");
+const { Schema, db, mongoose } = require("../utils/db");
 
 // 引入bcrypt模块用于密码加密，此处已注释掉
 // const bcrypt = require("bcrypt");

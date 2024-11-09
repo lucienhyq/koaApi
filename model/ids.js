@@ -1,4 +1,4 @@
-const { Schema, db } = require("./db");
+const { Schema, db } = require("../utils/db");
 
 const idsSchema = new Schema({
   type: { type: String, default: "adminId" },

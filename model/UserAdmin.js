@@ -1,5 +1,5 @@
 // 引入数据库模式和数据库连接
-const { Schema, db } = require("./db");
+const { Schema, db } = require("../utils/db");
 // 引入bcrypt模块用于密码加密
 const bcrypt = require("bcrypt");
 const Ids = require("./ids");

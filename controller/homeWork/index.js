@@ -4,7 +4,7 @@ const {
 } = require("../../model/homeWorkMaid");
 const { Admin, Role } = require("../../model/UserAdmin");
 const toolFunMiddleware = require("../../middleware/tool");
-const { db } = require("../../model/db");
+ 
 // 连接字符串，确保包含所有副本集成员
 const mongoose = require('mongoose');
 const uri =
@@ -219,7 +219,7 @@ class homeWork {
       }
 
       // 开始事务
-      const session = await mongoose.startSession();
+      const session = await env_db.startSession();
       session.startTransaction();
 
       try {
