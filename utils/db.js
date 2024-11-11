@@ -20,7 +20,7 @@ db.on("close", function () {
   mongoose.connect("mongodb://localhost:27017/qq", {
     useNewUrlParser: true,
     useUnifiedTopology: true,
-    server: { auto_reconnect: true },
+    server: { auto_reconnect: true },   
   });
 });
 

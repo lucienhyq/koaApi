@@ -219,7 +219,7 @@ class homeWork {
       }
 
       // 开始事务
-      const session = await env_db.startSession();
+      const session = await mongoose.startSession();
       session.startTransaction();
 
       try {
@@ -258,10 +258,10 @@ class homeWork {
         if (!AgencyUpdateResult) {
           throw new Error("更新代理信息失败");
         }
-
+        console.log('ssssssssss')
         // 更新用户信息
         const adminAgencyUpdateResult = await Admin.findOneAndUpdate(
-          { _id: adminAgencyResult.id },
+          { _id: adminAgencyResult._id },
           { $set: { roles: RoleResult._id } },
           { new: true }
         ).session(session);
