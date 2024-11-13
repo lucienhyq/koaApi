@@ -1,8 +1,8 @@
+const Joi = require("joi");
 class toolFun {
   getParams = async (ctx, next) => {
     try {
       // 安全性增强：对输入参数进行验证和清理
-      // console.log(ctx.request.body, "=====getParams");
       const params =
         ctx.request.method === "GET"
           ? this.sanitizeQuery(ctx.request.query)
@@ -51,37 +51,25 @@ class toolFun {
       .replace(/"/g, "&quot;")
       .replace(/'/g, "&#039;");
   };
-  checkRouterParams = (params, requiredFields = []) => {
+
+  // 使用 Joi 进行参数校验
+  checkRouterParams = (params, schema) => {
     if (!params || typeof params !== "object" || Array.isArray(params)) {
       return { valid: false, message: "参数必须是一个有效的对象" };
     }
-
-    if (!Array.isArray(requiredFields)) {
-      return { valid: false, message: "需要检查的字段列表必须是一个数组" };
+    if (!schema || !Joi.isSchema(schema)) {
+      return { valid: false, message: "校验模式必须是一个有效的 Joi 对象模式" };
     }
 
-    let isValid = true;
-    let errorMessage = "";
-    // 如果 requiredFields 为空数组，则检查所有字段
-    const fieldsToCheck =
-      requiredFields.length === 0 ? Object.keys(params) : requiredFields;
-    for (const field of fieldsToCheck) {
-      if (params.hasOwnProperty(field)) {
-        const value = params[field];
-        if (value === undefined || value === null || value === "") {
-          isValid = false;
-          errorMessage = `参数 ${field} 不能为空、null 或 undefined`;
-          break; // 遇到无效参数立即停止检查
-        }
-      } else {
-        isValid = false;
-        errorMessage = `缺少必需参数`;
-        console.log(`缺少必需参数 ${field}`);
-        break; // 缺少必需参数立即停止检查
-      }
+    const { error } = schema.validate(params);
+    if (error) {
+      return {
+        valid: false,
+        message: error.details[0].context["key"] + "参数校验不通过",
+      };
     }
 
-    return { valid: isValid, message: errorMessage };
+    return { valid: true, message: "" };
   };
 }
 

@@ -7,8 +7,8 @@ const bodyParser = require("koa-bodyparser");
 const session = require("koa-session");
 const toolFunMiddleware = require("./middleware/tool");
 const RoleManager = require("./controller/roleManager");
-const swagger = require('./utils/swagger');
-const koaSwagger = require('koa2-swagger-ui');
+const swagger = require("./utils/swagger");
+const koaSwagger = require("koa2-swagger-ui");
 
 // 配置 session start
 app.keys = ["your-session-secret"]; // 用于签名 session ID 的密钥
@@ -43,13 +43,14 @@ roleManager
 app.use(swagger.routes(), swagger.allowedMethods());
 
 // 使用 koa2-swagger-ui
-console.log(koaSwagger.koaSwagger)
-app.use(koaSwagger.koaSwagger({
-  routePrefix: '/swagger', // host at /swagger instead of default /docs
-  swaggerOptions: {
-    url: '/swagger.json', // example path to json 其实就是之后swagger-jsdoc生成的文档地址
-  },
-}));
+app.use(
+  koaSwagger.koaSwagger({
+    routePrefix: "/swagger", // host at /swagger instead of default /docs
+    swaggerOptions: {
+      url: "/swagger.json", // example path to json 其实就是之后swagger-jsdoc生成的文档地址
+    },
+  })
+);
 
 // 使用主路由
 app.use(IndexRouter.routes());

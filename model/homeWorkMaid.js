@@ -49,11 +49,24 @@ const homeWorkMaidSchema = new Schema({
     type: Number,
     default: 0,
   },
+  createdAt: {
+    type: Number,
+    default: () => Date.now(),
+  },
+  updatedAt: {
+    type: Number,
+    default: () => Date.now(),
+  },
 });
 homeWorkMaidSchema.add({
   audit_status: {
     type: Boolean,
     default: false,
+  },
+  // 所属代理关联objectid
+  agencyID: {
+    type: Schema.Types.ObjectId,
+    ref: "homeWorkAgency",
   },
 });
 homeWorkMaidSchema.pre("save", async function (next) {
@@ -66,6 +79,8 @@ homeWorkMaidSchema.pre("save", async function (next) {
     );
     that.id = counter.homeWorkMaidId;
   }
+  // 更新 updatedAt 字段
+  that.updatedAt = Date.now();
   next();
 });
 const homeWorkMaid_Model = db.model("homeWorkMaid", homeWorkMaidSchema);
@@ -109,6 +124,13 @@ const AgencySchema = new Schema({
   updatedAt: {
     type: Number,
     default: () => Date.now(),
+  },
+});
+AgencySchema.add({
+  // 代理抽佣比例
+  commission_rate: {
+    type: Number,
+    default: 1,
   },
 });
 AgencySchema.pre("save", async function (next) {

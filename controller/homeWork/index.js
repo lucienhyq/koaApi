@@ -4,11 +4,10 @@ const {
 } = require("../../model/homeWorkMaid");
 const { Admin, Role } = require("../../model/UserAdmin");
 const toolFunMiddleware = require("../../middleware/tool");
- 
-// 连接字符串，确保包含所有副本集成员
-const mongoose = require('mongoose');
-const uri =
-  "mongodb://127.0.0.1:27018/dev?replicaSet=rs0";
+const Joi = require("joi");
+// 连接副本集进行事务提交
+const mongoose = require("mongoose");
+const uri = "mongodb://127.0.0.1:27018/dev?replicaSet=rs0";
 
 mongoose
   .connect(uri, { useNewUrlParser: true, useUnifiedTopology: true })
@@ -16,11 +15,41 @@ mongoose
   .catch((err) => console.error("MongoDB connection error:", err));
 class homeWork {
   controller() {}
+  getAdmin = async (ctx, next) => {
+    // 获取登录用户信息和代理信息
+    try {
+      const adminResult = await Admin.findOne({
+        _id: ctx.session.userId,
+      });
+      ctx.state.adminResult = adminResult;
+      const agencyResult = await AgencySchema_Model.findOne({
+        adminId: ctx.session.userId,
+      });
+      ctx.state.agencyResult = agencyResult;
+      await next();
+    } catch (error) {
+      ctx.body = {
+        msg: "获取用户信息失败" + error,
+        data: [],
+        result: 0,
+      };
+    }
+  };
   //普通用户申请做家政阿姨
   addHomeWorkMaid = async (ctx, next) => {
     try {
       let { valid, message } = toolFunMiddleware.checkRouterParams(
-        ctx.request.paramsObj
+        ctx.request.paramsObj,
+        Joi.object({
+          real_name: Joi.string().required(),
+          id_card: Joi.string().required(),
+          address: Joi.string().required(),
+          phone: Joi.string().required(),
+          age: Joi.number().required(),
+          education: Joi.string().required(),
+          education_certificate: Joi.string().required(),
+          work_type: Joi.number(),
+        })
       );
       if (!valid) {
         // 参数校验不通过：返回前端提示
@@ -38,9 +67,7 @@ class homeWork {
         education_certificate,
         work_type,
       } = ctx.request.paramsObj;
-      const adminResult = await Admin.findOne({
-        _id: ctx.session.userId,
-      });
+      const adminResult = ctx.state.adminResult;
       const findHomeWorkMaid = await homeWorkMaid_Model
         .findOne({
           adminId: adminResult._id,
@@ -81,23 +108,20 @@ class homeWork {
   };
   //普通用户申请做家政代理
   homeWorkAgency = async (ctx, next) => {
-    const adminResult = await Admin.findOne({
-      _id: ctx.session.userId,
-    });
+    const adminResult = ctx.state.adminResult;
     try {
       const AgencySchemaResult = await AgencySchema_Model.findOne({
         adminId: adminResult._id,
       });
       let { valid, message } = toolFunMiddleware.checkRouterParams(
         ctx.request.paramsObj,
-        [
-          "phone",
-          "agencyName",
-          "register_address",
-          "business_license",
-          "id_card",
-          "phone",
-        ]
+        Joi.object({
+          agencyName: Joi.string().required(),
+          register_address: Joi.string().required(),
+          business_license: Joi.string().required(),
+          id_card: Joi.string().required(),
+          phone: Joi.string().required(),
+        })
       );
       if (!valid) {
         // 参数校验不通过：返回前端提示
@@ -142,15 +166,6 @@ class homeWork {
   //后台 家政代理审核列表
   getAgencyAuditList = async (ctx, next) => {
     try {
-      let { valid, message } = toolFunMiddleware.checkRouterParams(
-        ctx.request.paramsObj
-      );
-      if (!valid) {
-        // 参数校验不通过：返回前端提示
-        ctx.status = 400;
-        ctx.body = { message, result: 0 };
-        return;
-      }
       // adminId 会员id
       // adminName 会员名称
       // agencyName 代理名称
@@ -197,10 +212,13 @@ class homeWork {
 
   // 后台 家政代理审核
   auditAgency = async (ctx, next) => {
+    const adminResult = ctx.state.adminResult;
     try {
       let { valid, message } = toolFunMiddleware.checkRouterParams(
         ctx.request.paramsObj,
-        ["id"]
+        Joi.object({
+          id: Joi.string().required(),
+        })
       );
       if (!valid) {
         // 参数校验不通过：返回前端提示
@@ -209,12 +227,7 @@ class homeWork {
         return;
       }
       let { id } = ctx.request.paramsObj;
-
-      // 获取当前登录人员信息
-      const userInfo = await Admin.findOne({
-        _id: ctx.session.userId,
-      });
-      if (userInfo.roleGrade != 1) {
+      if (adminResult.roleGrade != 1) {
         throw new Error("权限不足");
       }
 
@@ -223,20 +236,20 @@ class homeWork {
       session.startTransaction();
 
       try {
-        // 代理信息
+        // 需要更改审核的列表代理信息
         const AgencyResult = await AgencySchema_Model.findOne({
           id: id,
-        }).populate('adminId').session(session);
+        })
+          .populate("adminId")
+          .session(session);
         if (!AgencyResult) {
           throw new Error("代理信息不存在");
         }
 
         // 获取当前代理的用户信息
-        console.log(AgencyResult.adminId.id,'ddddddddd')
         const adminAgencyResult = await Admin.findOne({
           id: AgencyResult.adminId.id,
         }).session(session);
-        console.log('dwwwww',adminAgencyResult)
         if (!adminAgencyResult) {
           throw new Error("代理用户信息不存在");
         }
@@ -258,15 +271,17 @@ class homeWork {
         if (!AgencyUpdateResult) {
           throw new Error("更新代理信息失败");
         }
-        console.log('ssssssssss')
         // 更新用户信息
-        const adminAgencyUpdateResult = await Admin.findOneAndUpdate(
-          { _id: adminAgencyResult._id },
-          { $set: { roles: RoleResult._id } },
-          { new: true }
-        ).session(session);
-        if (!adminAgencyUpdateResult) {
-          throw new Error("更新用户信息失败");
+        if (adminAgencyResult.roleGrade != 1) {
+          //如果当前代理是管理员，则不用更新roles和roleGrade
+          const adminAgencyUpdateResult = await Admin.findOneAndUpdate(
+            { _id: adminAgencyResult._id },
+            { $set: { roles: RoleResult._id } },
+            { new: true }
+          ).session(session);
+          if (!adminAgencyUpdateResult) {
+            throw new Error("更新用户信息失败");
+          }
         }
 
         // 提交事务
@@ -288,6 +303,99 @@ class homeWork {
       ctx.status = 500;
       ctx.body = {
         message: error.message,
+        result: 0,
+        data: [],
+      };
+    }
+  };
+  // 后台 家政阿姨列表
+  maidList = async (ctx, next) => {
+    try {
+      // const adminResult = ctx.state.adminResult;
+      const agencyResult = ctx.state.agencyResult;
+      console.log(ctx.state);
+      let { valid, message } = toolFunMiddleware.checkRouterParams(
+        ctx.request.paramsObj,
+        Joi.object({
+          id: Joi.string(),
+          agencyID: Joi.string(),
+          age: Joi.number(),
+          sex: Joi.number(),
+          page: Joi.number(),
+          isAgen: Joi.boolean(),
+        })
+      );
+      if (!valid) {
+        // 参数校验不通过：返回前端提示
+        ctx.status = 400;
+        ctx.body = { message, result: 0 };
+        return;
+      }
+      let { page = 1, id, agencyID, age, sex, isAgen } = ctx.request.paramsObj;
+      let querySearch = {
+        $or: [],
+      };
+      const pageSize = 15;
+      let skipCount = (page - 1) * pageSize;
+      if (id) {
+        querySearch.$or.push({ id: id });
+      }
+      if (age) {
+        querySearch.$or.push({ age: age });
+      }
+      if (sex) {
+        querySearch.$or.push({ sex: sex });
+      }
+      if (querySearch.$or.length === 0) {
+        querySearch = {};
+      }
+      if (isAgen) {
+        // 带这个传参说明是代理查看下属阿姨
+        if (!agencyResult) {
+          throw new Error("代理信息不存在");
+        }
+        querySearch.$and = [];
+        querySearch.$and.push({
+          agencyID: String(agencyResult.adminId),
+        });
+      } else {
+        if (agencyID) {
+          querySearch.$or.push({ agencyID: agencyID });
+        }
+      }
+      // 查找 homeWorkMaid 表的数据
+      const findMaid = await homeWorkMaid_Model
+        .find(querySearch)
+        .populate({
+          path: "adminId",
+          select: "-_id id roleGrade avatar",
+        })
+        .select("-__v")
+        .skip(skipCount)
+        .limit(pageSize);
+      // 将 Mongoose 文档转换为普通 JavaScript 对象
+      const maidArray =
+        findMaid.length > 0 ? findMaid.map((maid) => maid.toObject()) : [];
+      if (maidArray.length > 0) {
+        // 处理查询结果，添加 audit_status_txt 字段
+        maidArray.forEach((maid) => {
+          maid.audit_status_txt = maid.audit_status ? "已审核" : "审核中";
+        });
+      }
+      ctx.body = {
+        message: "success",
+        result: 1,
+        data: {
+          currentPage: page,
+          data: maidArray,
+        },
+      };
+    } catch (error) {
+      ctx.response.status = 200;
+      ctx.body = {
+        msg: String(error),
+        result: 0,
+        data: [],
       };
     }
   };
