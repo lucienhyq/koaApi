@@ -399,10 +399,9 @@ class homeWork {
       };
     }
   };
-  // 代理中心绑定家政阿姨员工
+  // 代理中心绑定家政阿姨员工 agencyResult代理信息 当前登录信息adminResult
   agencyBindMaid = async (ctx, next) => {
     let { adminResult, agencyResult } = ctx.state;
-    console.log(adminResult, agencyResult);
     if (
       adminResult.roleGrade == 0 &&
       agencyResult &&
@@ -416,8 +415,15 @@ class homeWork {
       };
     }
     try {
+      let maidBindAgency = await homeWorkMaid_Model.updateOne(
+        { adminId: adminResult._id },
+        { $set: { agencyID: agencyResult._id } }
+      );
+      ctx.status = 200;
       ctx.body = {
-        data: "",
+        data: maidBindAgency,
+        msg: "绑定成功",
+        result: 1,
       };
     } catch (error) {
       ctx.status = 500;
@@ -444,9 +450,9 @@ class homeWork {
     if (!valid) {
       // 参数校验不通过：返回前端提示
       ctx.status = 400;
-      ctx.body = { 
-        msg: message, 
-        result: 0 
+      ctx.body = {
+        msg: message,
+        result: 0,
       };
       return;
     }
