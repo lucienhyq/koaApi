@@ -5,6 +5,7 @@ const idsSchema = new Schema({
   memberId: { type: Number, default: 0 },
   homeWorkMaidId: { type: Number, default: 0 },
   homeWorkAgencyId: { type: Number, default: 0 },
+  orderId: { type: Number, default: 0 },
 });
 
 const ids = db.model("ids", idsSchema);

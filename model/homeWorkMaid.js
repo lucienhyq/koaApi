@@ -49,6 +49,22 @@ const homeWorkMaidSchema = new Schema({
     type: Number,
     default: 0,
   },
+  // 工价，由代理设置
+  wage: {
+    type: Number,
+    default: 0,
+  },
+  // 上班时间，由代理设置
+  working_hours: {
+    type: [
+      {
+        day: { type: String, default: "" }, // 具体日期格式，如 "2024/11/13"
+        start_time: { type: Number, default: 0 }, // 时间戳
+        end_time: { type: Number, default: 0 }, // 时间戳
+      },
+    ],
+    default: [],
+  },
   createdAt: {
     type: Number,
     default: () => Date.now(),

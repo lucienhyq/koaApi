@@ -278,6 +278,7 @@ router.get(
  * /maidList/homeWorkAgency:
  *   get:
  *     description: 获取家政阿姨列表
+ *     summary: 获取家政阿姨列表
  *     tags: [家政模块]
  *     produces:
  *       - application/json
@@ -338,6 +339,13 @@ router.get(
   homeWorkController.getAdmin,
   homeWorkController.maidList
 );
-
+// # 代理中心绑定家政阿姨员工
+router.post(
+  "/agencyBindMaid",
+  checkAuthorizationHeader,
+  checkLogin.check,
+  homeWorkController.getAdmin,
+  homeWorkController.agencyBindMaid
+);
 
 module.exports = router;
