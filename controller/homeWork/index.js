@@ -1,7 +1,7 @@
 const {
   homeWorkMaid_Model,
   AgencySchema_Model,
-} = require("../../model/homeWorkMaid");
+} = require("../../model/homeWork/homeWorkMaid");
 const { Admin, Role } = require("../../model/UserAdmin");
 const toolFunMiddleware = require("../../middleware/tool");
 const Joi = require("joi");
@@ -15,6 +15,7 @@ mongoose
   .catch((err) => console.error("MongoDB connection error:", err));
 class homeWork {
   controller() {}
+  // 工具中间件 start
   getAdmin = async (ctx, next) => {
     // 获取登录用户信息和代理信息
     try {
@@ -35,6 +36,7 @@ class homeWork {
       };
     }
   };
+  // 工具中间件 end
   //普通用户申请做家政阿姨
   addHomeWorkMaid = async (ctx, next) => {
     try {
@@ -415,8 +417,14 @@ class homeWork {
       };
     }
     try {
+      let maidResult = await homeWorkMaid_Model.findOne({
+        id: ctx.request.paramsObj.maidId,
+      });
+      if (!maidResult.audit_status) {
+        throw new Error("该员工未通过审核");
+      }
       let maidBindAgency = await homeWorkMaid_Model.updateOne(
-        { adminId: adminResult._id },
+        { id: maidResult.id },
         { $set: { agencyID: agencyResult._id } }
       );
       ctx.status = 200;
@@ -426,150 +434,9 @@ class homeWork {
         result: 1,
       };
     } catch (error) {
-      ctx.status = 500;
-      ctx.body = { message: "服务器错误", error };
+      ctx.status = 200;
+      ctx.body = { message: String(error), result: 0 };
     }
   };
-  // 设置家政阿姨工作时间
-  setMaidWorkTime = async (ctx, next) => {
-    let { valid, message } = toolFunMiddleware.checkRouterParams(
-      ctx.request.paramsObj,
-      Joi.object({
-        wage: Joi.number().required(),
-        working_hours: Joi.array()
-          .items(
-            Joi.object({
-              day: Joi.string().required(), // 具体日期格式，如 "2024/11/13"
-              start_time: Joi.number().required(), // 时间戳
-              end_time: Joi.number().required(), // 时间戳
-            })
-          )
-          .required(),
-      })
-    );
-    if (!valid) {
-      // 参数校验不通过：返回前端提示
-      ctx.status = 400;
-      ctx.body = {
-        msg: message,
-        result: 0,
-      };
-      return;
-    }
-    let { wage, working_hours } = ctx.request.paramsObj;
-    try {
-      const maid = await homeWorkMaid_Model.findByIdAndUpdate(
-        maidId,
-        { wage, working_hours },
-        { new: true }
-      );
-
-      if (!maid) {
-        throw new Error("Maid not found");
-      }
-
-      ctx.body = {
-        data: maid,
-        result: 1,
-        message: "修改成功",
-      };
-    } catch (error) {
-      ctx.status = 500;
-      ctx.body = { message: "服务器错误", error };
-    }
-  };
-  // 预约家政 创建订单 测试中未
-  async createOrder(ctx) {
-    let { valid, message } = toolFunMiddleware.checkRouterParams(
-      ctx.request.paramsObj,
-      Joi.object({
-        customerId: Joi.string().required(),
-        maidId: Joi.string().required(),
-        date: Joi.string().required(),
-        start_time: Joi.string()
-          .regex(/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/)
-          .required(),
-        end_time: Joi.string()
-          .regex(/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/)
-          .required(),
-      })
-    );
-    if (!valid) {
-      // 参数校验不通过：返回前端提示
-      ctx.status = 400;
-      ctx.body = { message, result: 0 };
-      return;
-    }
-    const { customerId, maidId, date, start_time, end_time } = ctx.request.body;
-
-    // 确保 start_time 不晚于 end_time
-    if (
-      new Date(`${date}T${start_time}:00`).getTime() >=
-      new Date(`${date}T${end_time}:00`).getTime()
-    ) {
-      ctx.body = {
-        result: 0,
-        msg: "开始时间不能晚于结束时间",
-      };
-      return;
-    }
-
-    try {
-      // 开始事务
-      const session = await mongoose.startSession();
-      session.startTransaction();
-
-      // 检查家政阿姨是否有空闲时间
-      const maid = await homeWorkMaid_Model
-        .findOne({ _id: maidId })
-        .session(session);
-      if (!maid) {
-        return (ctx.status = 404), (ctx.body = { message: "家政阿姨未找到" });
-      }
-
-      // 将时间字符串转换为时间戳
-      const startDate = new Date(`${date}T${start_time}:00`).getTime();
-      const endDate = new Date(`${date}T${end_time}:00`).getTime();
-
-      const isAvailable = maid.working_hours.some((wh) => {
-        const workingDay = new Date(wh.day).setHours(0, 0, 0, 0);
-        return (
-          wh.day === date &&
-          startDate >= wh.start_time &&
-          startDate < wh.end_time &&
-          endDate > wh.start_time &&
-          endDate <= wh.end_time
-        );
-      });
-
-      if (!isAvailable) {
-        throw new Error("家政阿姨在该时间段内没有空闲时间");
-      }
-
-      // 创建订单
-      const order = new OrderModel({
-        customerId,
-        maidId,
-        date,
-        start_time: startDate,
-        end_time: endDate,
-      });
-
-      await order.save({ session });
-
-      // 提交事务
-      await session.commitTransaction();
-      session.endSession();
-
-      ctx.status = 201;
-      ctx.body = order;
-    } catch (error) {
-      // 回滚事务
-      await session.abortTransaction();
-      session.endSession();
-      ctx.status = 500;
-      ctx.body = { message: "服务器错误", error };
-    }
-  }
 }
-module.exports = new homeWork();
+module.exports = homeWork;

@@ -1,5 +1,5 @@
-const { Schema, db } = require("../utils/db");
-const Ids = require("./ids");
+const { Schema, db } = require("../../utils/db");
+const Ids = require("../ids");
 // 家政阿姨模型
 const homeWorkMaidSchema = new Schema({
   // 家政阿姨id
@@ -48,22 +48,6 @@ const homeWorkMaidSchema = new Schema({
   work_type: {
     type: Number,
     default: 0,
-  },
-  // 工价，由代理设置
-  wage: {
-    type: Number,
-    default: 0,
-  },
-  // 上班时间，由代理设置
-  working_hours: {
-    type: [
-      {
-        day: { type: String, default: "" }, // 具体日期格式，如 "2024/11/13"
-        start_time: { type: Number, default: 0 }, // 时间戳
-        end_time: { type: Number, default: 0 }, // 时间戳
-      },
-    ],
-    default: [],
   },
   createdAt: {
     type: Number,

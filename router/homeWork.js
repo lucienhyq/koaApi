@@ -2,8 +2,11 @@
 const Router = require("@koa/router");
 const router = new Router();
 const checkLogin = require("../middleware/checkLogin");
-const homeWorkController = require("../controller/homeWork/index");
+const homeWork = require("../controller/homeWork/index");
 const { checkAuthorizationHeader } = require("../middleware/auth");
+const homeWorkOrder = require("../controller/homeWork/homeWorkOrder");
+const homeWorkServe = require("../controller/homeWork/homeWorkserve");
+const homeWorkController = new homeWork();
 /**
  * @swagger
  * definitions:
@@ -346,6 +349,25 @@ router.post(
   checkLogin.check,
   homeWorkController.getAdmin,
   homeWorkController.agencyBindMaid
+);
+
+router.post(
+  "/homeWork/order/create",
+  checkAuthorizationHeader,
+  checkLogin.check,
+  homeWorkController.getAdmin,
+  homeWorkServe.serveCreate
+);
+
+
+
+// 创建订单 未完成
+router.post(
+  "/homeWork/order/create",
+  checkAuthorizationHeader,
+  checkLogin.check,
+  homeWorkController.getAdmin,
+  homeWorkOrder.createOrder
 );
 
 module.exports = router;
