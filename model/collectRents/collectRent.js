@@ -58,11 +58,6 @@ const tenant = new Schema({
     type: Schema.Types.ObjectId,
     ref: "Admin",
   },
-  // 房源标题
-  title: {
-    type: String,
-    required: true,
-  },
   // 房源地址
   address: {
     type: String,
@@ -70,6 +65,10 @@ const tenant = new Schema({
   },
   // 审核状态
   status: {
+    type: Number,
+    default: 0,
+  },
+  rentTime: {
     type: Number,
     default: 0,
   },
@@ -92,5 +91,5 @@ landlord.pre("save", async function (next) {
 // 创建并导出Admin模型
 const SettingSchema = db.model("collectRent_Setting", collectRentSetting);
 const landlordSchema = db.model("collectRent_landlord", landlord);
-const collectRent_tenant = db.model("collectRent_tenant", tenant);
-module.exports = { SettingSchema, landlordSchema, collectRent_tenant };
+const collectRentSchema = db.model("collectRent_tenant", tenant);
+module.exports = { SettingSchema, landlordSchema, collectRentSchema };

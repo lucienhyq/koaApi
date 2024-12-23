@@ -71,6 +71,30 @@ class toolFun {
 
     return { valid: true, message: "" };
   };
+  checkUserRoles = async (ctx, next) => {
+    try {
+      const UserAdmin = ctx.state.adminResult;
+      const landlord = await landlordSchema
+        .findOne({ adminId: UserAdmin._id })
+        .count();
+      const tenant = await collectRentSchema
+        .findOne({ adminId: UserAdmin._id })
+        .count();
+      if (landlord) {
+        ctx.state.landlord = true;
+      }
+      if (tenant) {
+        ctx.state.tenant = true;
+      }
+      await next();
+    } catch (error) {
+      ctx.body = {
+        msg: "",
+        data: error.message,
+        result: 0,
+      };
+    }
+  };
 }
 
 module.exports = new toolFun();

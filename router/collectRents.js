@@ -9,6 +9,8 @@ const UserAdmin = require("../controller/user/index");
 // 房东控制器
 const landlord = require("../controller/collectRents_controller/landlord");
 const landlordController = new landlord();
+const toolFunMiddleware = require("../middleware/tool");
+
 // landlord 房东 renter 租客
 /**
  * @api {post} /collectRent/applyLandlord 申请成为房东
@@ -38,9 +40,10 @@ router.get(
   checkAuthorizationHeader,
   checkLogin.check,
   UserAdmin.getAdmin,
-  landlordController.checkUserRoles,
+  toolFunMiddleware.checkUserRoles,
   landlordController.list,
 );
+// 设置租客
 
 
 

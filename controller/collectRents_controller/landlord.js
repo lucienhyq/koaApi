@@ -3,7 +3,7 @@ const Joi = require("joi");
 const {
   SettingSchema,
   landlordSchema,
-  collectRent_tenant,
+  collectRentSchema,
 } = require("../../model/collectRents/collectRent");
 class landlord {
   /**
@@ -103,26 +103,25 @@ class landlord {
       ctx.body = { msg: "审核失败" + error.message, result: 0 };
     }
   };
-  checkUserRoles = async (ctx, next) => {
-    try {
-      const UserAdmin = ctx.state.adminResult;
-      const landlord = await landlordSchema.findOne({ adminId: UserAdmin._id }).count();
-      console.log(landlord)
-      if(landlord)
-      ctx.state.landlord = true;
-      next();
-    } catch (error) {
-      ctx.body = {
-        msg: "",
-        data: error.message,
-        result: 0,
-      };
-    }
-  };
+  
   list = async (ctx, next) => {
     try {
-      // console.log(ctx.state);
-    } catch (error) {}
+      if (!ctx.state.landlord) {
+        ctx.body = {
+          msg: "",
+          data: "您还未成为房东，请先申请成为房东",
+          result: 0,
+        };
+        return;
+      }
+      let listRecord = await landlordSchema.find({
+        adminId: ctx.state.adminResult._id,
+      });
+      ctx.body = { msg: "操作成功", result: 1, data: listRecord };
+    } catch (error) {
+      console.log(error.message);
+      ctx.body = { msg: "操作失败", result: 0, data: error.message }; // 添加这一行
+    }
   };
 }
 
