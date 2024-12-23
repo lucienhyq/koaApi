@@ -12,6 +12,22 @@ class UserAdmin {
   constructor() {
     eventEmitter.on("orderCreated", this.handleOrderCreated.bind(this));
   }
+  getAdmin = async (ctx, next) => {
+    // 获取登录用户信息和代理信息
+    try {
+      const adminResult = await Admin.findOne({
+        _id: ctx.session.userId,
+      }).populate("roles");
+      ctx.state.adminResult = adminResult;
+      await next();
+    } catch (error) {
+      ctx.body = {
+        msg: "获取用户信息失败" + error,
+        data: [],
+        result: 0,
+      };
+    }
+  };
   // 是否存在手机号会员 中间件
   checkUser = async (ctx, next) => {
     const { phone } = ctx.request.paramsObj;
@@ -56,7 +72,7 @@ class UserAdmin {
         };
         return;
       } else {
-        if(!password){
+        if (!password) {
           ctx.body = {
             msg: "密码错误",
             result: 0,
