@@ -1,10 +1,7 @@
 const mongoose = require("mongoose");
 const chalk = require("chalk");
 
-const db = mongoose.createConnection("mongodb://127.0.0.1:27017/dev", {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-});
+const db = mongoose.createConnection("mongodb://127.0.0.1:27017/dev");
 
 db.once("open", () => {
   console.log(chalk.green("连接数据库成功"));

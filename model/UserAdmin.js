@@ -13,8 +13,8 @@ const adminSchema = new Schema({
   username: { type: String, default: "" },
   password: { type: String, default: "" },
   email: { type: String, default: "" },
-  phone: { type: String, default: "" },
-  // 0 普通用户 1 总管理员 2 家政代理
+  phone: { type: String, default: "", unique: true },
+  account: { type: String, default: "", unique: true },
   roleGrade: {
     type: Number,
     default: 0,
@@ -40,22 +40,26 @@ adminSchema.add({
 const roleSchema = new Schema({
   name: { type: String, required: true, unique: true },
   Level: { type: String },
-  permissions: [{ type: Schema.Types.ObjectId, ref: "Permission" }],
+  id: {
+    type: Number,
+    unique: true,
+    required: true,
+  },
 });
 
-// 权限表
-const permissionSchema = new Schema({
-  name: { type: String, required: true, unique: true },
-  description: { type: String, default: "0" },
-  subRoutes: [
-    // 子路由及其页面名称
-    {
-      name: { type: String, default: "" },
-      route: { type: String, default: "" },
-      child: [this], // 嵌套子路由
-    },
-  ],
-});
+// // 权限表
+// const permissionSchema = new Schema({
+//   name: { type: String, required: true, unique: true },
+//   description: { type: String, default: "0" },
+//   subRoutes: [
+//     // 子路由及其页面名称
+//     {
+//       name: { type: String, default: "" },
+//       route: { type: String, default: "" },
+//       child: [this], // 嵌套子路由
+//     },
+//   ],
+// });
 
 // 对模型方法进行扩展，例如添加验证密码的方法。
 /**
@@ -93,9 +97,21 @@ adminSchema.pre("save", async function (next) {
     next();
   }
 });
+roleSchema.pre("save", async function (next) {
+  const that = this;
+  if (that.isNew) {
+    const counter = await Ids.findOneAndUpdate(
+      { type: "adminId" },
+      { $inc: { roleId: 1 } },
+      { upsert: true, new: true }
+    );
+    that.id = counter.roleId;
+  }
+  next();
+});
 
 // 创建并导出Admin模型
 const Admin = db.model("Admin", adminSchema);
 const Role = db.model("Role", roleSchema);
-const Permission = db.model("Permission", permissionSchema);
-module.exports = { Admin, Role, Permission };
+// const Permission = db.model("Permission", permissionSchema);
+module.exports = { Admin, Role };

@@ -6,8 +6,8 @@ const { mongoose } = require("../../utils/db");
 const EventEmitter = require("events");
 const eventEmitter = new EventEmitter();
 // 获取路由实例
-const RoleManager = require("../../controller/roleManager");
-const roleManager = RoleManager.getInstance();
+// const RoleManager = require("../../controller/roleManager");
+// const roleManager = RoleManager.getInstance();
 class UserAdmin {
   constructor() {
     eventEmitter.on("orderCreated", this.handleOrderCreated.bind(this));
@@ -61,7 +61,8 @@ class UserAdmin {
         return;
       }
       console.log("ddddddddd", ctx.state);
-      let permissions = roleManager.getPermissionsForRole(findAdmin.roles.name);
+      // let permissions = roleManager.getPermissionsForRole(findAdmin.roles.name);
+      let permissions;
       if (ctx.state.authBreak) {
         // 经过token鉴权
         ctx.session.userId = ctx.state.user.userId.id;

@@ -191,11 +191,11 @@ router.post(
 // 获取当前管理员 权限
 
 // 将 homeWork 路由挂载到 /homeWork 下
-router.use(
-  "/homeWork",
-  homeWorkRouter.routes(),
-  homeWorkRouter.allowedMethods()
-);
+// router.use(
+//   "/homeWork",
+//   homeWorkRouter.routes(),
+//   homeWorkRouter.allowedMethods()
+// );
 router.use(
   "/collectRent",
   collectRentsRouter.routes(),

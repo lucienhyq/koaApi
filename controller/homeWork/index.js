@@ -6,13 +6,13 @@ const { Admin, Role } = require("../../model/UserAdmin");
 const toolFunMiddleware = require("../../middleware/tool");
 const Joi = require("joi");
 // 连接副本集进行事务提交
-const mongoose = require("mongoose");
-const uri = "mongodb://127.0.0.1:27018/dev?replicaSet=rs0";
+// const mongoose = require("mongoose");
+// const uri = "mongodb://127.0.0.1:27018/dev?replicaSet=rs0";
 
-mongoose
-  .connect(uri, { useNewUrlParser: true, useUnifiedTopology: true })
-  .then(() => console.log("MongoDB connected"))
-  .catch((err) => console.error("MongoDB connection error:", err));
+// mongoose
+//   .connect(uri, { useNewUrlParser: true, useUnifiedTopology: true })
+//   .then(() => console.log("MongoDB connected"))
+//   .catch((err) => console.error("MongoDB connection error:", err));
 class homeWork {
   controller() {}
   // 工具中间件 start

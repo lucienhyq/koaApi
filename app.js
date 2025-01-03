@@ -6,7 +6,7 @@ const IndexRouter = require("./router/index");
 const bodyParser = require("koa-bodyparser");
 const session = require("koa-session");
 const toolFunMiddleware = require("./middleware/tool");
-const RoleManager = require("./controller/roleManager");
+const roleManager = require("./controller/roleManager");
 const swagger = require("./utils/swagger");
 const koaSwagger = require("koa2-swagger-ui");
 
@@ -28,8 +28,7 @@ app.use(session(CONFIG, app));
 app.use(bodyParser());
 app.use(toolFunMiddleware.getParams);
 
-// 初始化权限和角色管理器
-const roleManager = RoleManager.getInstance();
+//初始化角色和管理员root账号
 roleManager
   .init()
   .then(() => {
@@ -38,7 +37,6 @@ roleManager
   .catch((err) => {
     console.error("Failed to initialize roles and permissions:", err);
   });
-
 // 使用 Swagger 路由
 app.use(swagger.routes(), swagger.allowedMethods());
 
