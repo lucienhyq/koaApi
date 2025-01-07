@@ -20,4 +20,13 @@ router.post(
   landlordController.authRoot,
   landlordController.rentHouseAdd
 );
+// 录入当前月电费水费 生成当前房源账单
+router.post(
+  "/enteringMonthData",
+  checkAuthorizationHeader,
+  checkLogin.check,
+  UserAdminController.getAdmin,
+  landlordController.authRoot,
+  landlordController.enteringMonthData
+);
 module.exports = router;

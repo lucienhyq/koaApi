@@ -1,7 +1,8 @@
 // 引入数据库模式和数据库连接
-const { required, defaults } = require("joi");
+const { string } = require("joi");
 const { Schema, db } = require("../../utils/db");
 const Ids = require("../ids");
+
 // 房源基本设置
 const collectRentSetting = new Schema({
   // 水费率
@@ -26,6 +27,7 @@ const collectRentSetting = new Schema({
     ],
   },
 });
+
 // 房源表
 const landlord = new Schema({
   id: { type: Number, unique: true },
@@ -39,19 +41,10 @@ const landlord = new Schema({
   address: {
     type: String,
     required: true,
+    unique: true,
   },
-  // 房号
-  unit: {
-    type: String,
-    required: true,
-  },
-  // 押金
-  deposit: {
-    type: Number,
-    required: true,
-  },
-  // 基本租金
-  basic_rent: {
+  // 层高
+  floorHeight: {
     type: Number,
     required: true,
   },
@@ -60,11 +53,30 @@ const landlord = new Schema({
     type: Array,
     default: [],
   },
+  unit: {
+    type: Schema.Types.ObjectId,
+    ref: "unit",
+  },
   updatedAt: {
     type: String,
     default: 0,
   },
 });
+landlord.pre("save", async function (next) {
+  const that = this;
+  if (that.isNew) {
+    const counter = await Ids.findOneAndUpdate(
+      { type: "adminId" },
+      { $inc: { landlord: 1 } },
+      { upsert: true, new: true }
+    );
+    that.id = counter.landlord;
+  }
+  // 更新 updatedAt 字段
+  that.updatedAt = Date.now();
+  next();
+});
+
 // 租客表
 const tenant = new Schema({
   // 房源id
@@ -89,21 +101,96 @@ tenant.pre("save", async function (next) {
   }
   next();
 });
-landlord.pre("save", async function (next) {
+
+// 月录入水电
+const montStatement = new Schema({
+  // 房源id
+  landkird_id: {
+    type: Schema.Types.ObjectId,
+    ref: "landlord",
+  },
+  // 出租单元id
+  unit_id: {
+    type: Schema.Types.ObjectId,
+    ref: "unit",
+  },
+  // 月份
+  month: {
+    type: Date,
+    required: true,
+  },
+  // 水费
+  water: {
+    type: Number,
+    required: true,
+  },
+  electricity: {
+    type: Number,
+    required: true,
+  },
+  // 创建时间
+  create_time: {
+    type: Date,
+    default: Date.now(),
+  },
+});
+
+const unit = new Schema({
+  // 房源id
+  landkird_id: {
+    type: Schema.Types.ObjectId,
+    ref: "landlord",
+  },
+  // 押金
+  deposit_type: {
+    type: Number,
+    required: true,
+  },
+  // 基本租金
+  basic_rent: {
+    type: Number,
+    required: true,
+  },
+  Roomname: {
+    type: String,
+    required: true,
+  },
+  // 当前电表度数
+  electricity_now: {
+    type: String,
+    default: 0,
+  },
+  // 当前水表度数
+  water_now: {
+    type: String,
+    default: 0,
+  },
+  // 是否租售 0未租，1已租
+  rent_status: {
+    type: Number,
+    default: 0,
+  },
+  updatedAt: {
+    type: String,
+    default: String(Date.now()),
+  },
+});
+unit.pre("save", async function (next) {
   const that = this;
   if (that.isNew) {
-    const counter = await Ids.findOneAndUpdate(
-      { type: "adminId" },
-      { $inc: { landlord: 1 } },
-      { upsert: true, new: true }
-    );
-    that.id = counter.landlord;
+    that.updatedAt = Date.now();
   }
-  // 更新 updatedAt 字段
-  that.updatedAt = Date.now();
   next();
 });
 const SettingSchema = db.model("collectRent_Setting", collectRentSetting);
 const landlordSchema = db.model("collectRent_landlord", landlord);
 const collectRentSchema = db.model("collectRent_tenant", tenant);
-module.exports = { SettingSchema, landlordSchema, collectRentSchema };
+const unitSchema = db.model("collectRent_unit", unit);
+const montStatementSchema = db.model("collectRent_montData", montStatement);
+module.exports = {
+  SettingSchema,
+  landlordSchema,
+  collectRentSchema,
+  unitSchema,
+  montStatementSchema,
+};
