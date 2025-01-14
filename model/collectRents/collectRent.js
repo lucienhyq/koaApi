@@ -1,5 +1,4 @@
 // 引入数据库模式和数据库连接
-const { string } = require("joi");
 const { Schema, db } = require("../../utils/db");
 const Ids = require("../ids");
 
@@ -102,47 +101,20 @@ tenant.pre("save", async function (next) {
   next();
 });
 
-// 月录入水电
-const montStatement = new Schema({
-  // 房源id
-  landkird_id: {
-    type: Schema.Types.ObjectId,
-    ref: "landlord",
-  },
-  // 出租单元id
-  unit_id: {
-    type: Schema.Types.ObjectId,
-    ref: "unit",
-  },
-  // 月份
-  month: {
-    type: Date,
-    required: true,
-  },
-  // 水费
-  water: {
-    type: Number,
-    required: true,
-  },
-  electricity: {
-    type: Number,
-    required: true,
-  },
-  // 创建时间
-  create_time: {
-    type: Date,
-    default: Date.now(),
-  },
-});
-
+// 出租单元
 const unit = new Schema({
   // 房源id
   landkird_id: {
     type: Schema.Types.ObjectId,
     ref: "landlord",
   },
-  // 押金
+  // 押金选项id
   deposit_type: {
+    type: Number,
+    required: true,
+  },
+  // 押金金额数量
+  deposit_money: {
     type: Number,
     required: true,
   },
@@ -182,15 +154,14 @@ unit.pre("save", async function (next) {
   }
   next();
 });
+
 const SettingSchema = db.model("collectRent_Setting", collectRentSetting);
 const landlordSchema = db.model("collectRent_landlord", landlord);
 const collectRentSchema = db.model("collectRent_tenant", tenant);
 const unitSchema = db.model("collectRent_unit", unit);
-const montStatementSchema = db.model("collectRent_montData", montStatement);
 module.exports = {
   SettingSchema,
   landlordSchema,
   collectRentSchema,
   unitSchema,
-  montStatementSchema,
 };

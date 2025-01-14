@@ -86,11 +86,10 @@ class landlord {
         {
           address: Joi.string().required(),
           floorHeight: Joi.number().required(),
-          unit: Joi.array(),
         },
         ctx
       );
-      let setting = await landlord.getOrCreateSetting();
+      // let setting = await landlord.getOrCreateSetting();
       const findLandlordCount = await landlordSchema
         .find({
           address: ctx.request.paramsObj.address,
@@ -105,24 +104,24 @@ class landlord {
           address: ctx.request.paramsObj.address,
           floorHeight: ctx.request.paramsObj.floorHeight,
         });
-        if (res) {
-          if (ctx.request.paramsObj.unit) {
-            let createUnit = ctx.request.paramsObj.unit;
-            for (let i = 0; i < createUnit.length; i++) {
-              const depositItem = setting.deposit.find(
-                (item) => item.id == createUnit[i].deposit
-              );
-              createUnit[i].landkird_id = res._id;
-              createUnit[i].basic_rent = Number(createUnit[i].basic_rent);
-              if (depositItem) {
-                createUnit[i].deposit_type = depositItem.id;
-              } else {
-                createUnit[i].deposit_type = 0;
-              }
-            }
-            await unitSchema.insertMany(createUnit);
-          }
-        }
+        // if (res) {
+        //   if (ctx.request.paramsObj.unit) {
+        //     let createUnit = ctx.request.paramsObj.unit;
+        //     for (let i = 0; i < createUnit.length; i++) {
+        //       const depositItem = setting.deposit.find(
+        //         (item) => item.id == createUnit[i].deposit
+        //       );
+        //       createUnit[i].landkird_id = res._id;
+        //       createUnit[i].basic_rent = Number(createUnit[i].basic_rent);
+        //       if (depositItem) {
+        //         createUnit[i].deposit_type = depositItem.id;
+        //       } else {
+        //         createUnit[i].deposit_type = 0;
+        //       }
+        //     }
+        //     await unitSchema.insertMany(createUnit);
+        //   }
+        // }
         ctx.body = {
           msg: "新建房源成功",
           data: res,
@@ -137,17 +136,21 @@ class landlord {
       };
     }
   };
-  // 录入每月电费，水费
-  enteringMonthData = async (ctx, next) => {
+  // 新建出租单元
+  unitAdd = async (ctx, next) => {
     try {
       let { valid, message } = toolFunMiddleware.checkRouterParams(
         ctx.request.paramsObj,
         Joi.object({
-          water: Joi.string().required(),
-          electricity: Joi.string().required(),
-          unit_id: Joi.string().required(),
-          year: Joi.number().required(),
-          month: Joi.number().required(),
+          landkird_id: Joi.string().required(),
+          // 押金选项的id值
+          deposit: Joi.number().required(),
+          // 基本租金
+          basic_rent: Joi.number().required(),
+          // 出租单元名称 如：201 ，301
+          Roomname: Joi.string().required(),
+          electricity_now: Joi.string().required(),
+          water_now: Joi.string().required(),
         })
       );
       if (!valid) {
@@ -156,36 +159,41 @@ class landlord {
         ctx.body = { message, result: 0 };
         return;
       }
-      const { year, month, unit_id, water, electricity } =
-        ctx.request.paramsObj;
-
-      const formattedMonth = new Date(
-        `${year}-${month < 10 ? "0" + month : month}-01`
-      );
-      let findRes = await montStatementSchema.find({
-        unit_id: unit_id,
-        month: formattedMonth,
-      });
-
-      if (findRes.length > 0) {
-        ctx.body = {
-          code: 200,
-          message: "该月已录入水电",
-        };
+      let findUnitNum = await unitSchema
+        .find({
+          landkird_id: ctx.request.paramsObj.landkird_id,
+          Roomname: ctx.request.paramsObj.Roomname,
+        })
+        .count();
+      if (findUnitNum > 0) {
+        ctx.body = { msg: "该单元已存在", result: 0 };
         return;
       }
-      // 构建要存储的数据
-      const dataToStore = {
-        water: water,
-        electricity: electricity,
-        unit_id: ctx.request.body.unit_id,
-        month: formattedMonth,
+      let { deposit, electricity_rate, water_rate } =
+        await landlord.getOrCreateSetting();
+      let indDeposit = deposit.filter((item) => {
+        return item.id == ctx.request.paramsObj.deposit;
+      });
+      // 押金比例 * 基本租金 = 押金
+      let depositRate = indDeposit[0].rate;
+      let depositOpt = indDeposit[0].id;
+      // 新建单元
+      let createUnit = {
+        landkird_id: ctx.request.paramsObj.landkird_id,
+        deposit_type: depositOpt,
+        deposit_money: Number(ctx.request.paramsObj.basic_rent) * depositRate,
+        basic_rent: ctx.request.paramsObj.basic_rent,
+        Roomname: ctx.request.paramsObj.Roomname,
+        electricity_now: ctx.request.paramsObj.electricity_now,
+        water_now: ctx.request.paramsObj.water_now,
+        water_price: ctx.request.paramsObj.water_price,
+        electricity_price: ctx.request.paramsObj.electricity_price,
+        water_now: ctx.request.paramsObj.water_now,
       };
-      let res = await montStatementSchema.create(dataToStore);
+      let createUnit_resul = await unitSchema.create(createUnit);
       ctx.body = {
-        result: 1,
-        message: "录入成功",
-        data: res,
+        msg: "添加成功",
+        data: createUnit_resul,
       };
     } catch (error) {
       ctx.body = {
@@ -194,6 +202,7 @@ class landlord {
       };
     }
   };
+  
 }
 
 module.exports = landlord;
